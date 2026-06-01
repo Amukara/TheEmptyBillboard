@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Empty Billboard — $1/min, doubles every purchase</title>
+    <meta name="description" content="A billboard that costs $1/minute. Rate doubles every time someone buys. What will the next message be?">
+    <meta property="og:title" content="The Empty Billboard — Watch the countdown">
+    <meta property="og:description" content="Someone just paid to put a message here. How long will it last?">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://yourdomain.com/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #111111;
+            --border: #111111;
+            --muted: #888888;
+            --accent: #ffd700;
+            --danger: #cc0000;
+            --warning-bg: #fff8e1;
+            --empty-bg: #fafafa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            text-align: center;
+            margin: 20px 0 10px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .header .subtitle {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ── BILLBOARD ── */
+        .billboard-wrapper {
+            width: 100%;
+            max-width: 720px;
+            position: relative;
+        }
+
+        .billboard {
+            width: 100%;
+            min-height: 320px;
+            border: 6px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 30px 70px;
+            position: relative;
+            background: var(--bg);
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .billboard.empty-state {
+            border-style: dashed;
+            background: var(--empty-bg);
+        }
+
+        .billboard.active-state {
+            border-style: solid;
+            background: #ffffff;
+        }
+
+        /* Glow pulse when under 5 minutes */
+        .billboard.urgent-state {
+            border-color: var(--danger);
+            animation: borderPulse 1s infinite;
+        }
+
+        @keyframes borderPulse {
+            0%, 100% { border-color: var(--danger); box-shadow: 0 0 0 rgba(204,0,0,0); }
+            50% { border-color: #ff4444; box-shadow: 0 0 30px rgba(204,0,0,0.3); }
+        }
+
+        .billboard-message {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.3;
+            word-break: break-word;
+            max-width: 100%;
+            z-index: 1;
+        }
+
+        .billboard.empty-state .billboard-message {
+            color: #999;
+            font-weight: 400;
+            font-style: italic;
+            font-size: 1.6rem;
+        }
+
+        .billboard-buyer {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 12px;
+            z-index: 1;
+        }
+
+        /* ── COUNTDOWN ── */
+        .countdown-section {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .countdown-timer {
+            font-size: 2.8rem;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+            color: var(--text);
+            transition: color 0.3s;
+        }
+
+        .countdown-timer.warning {
+            color: #e67e00;
+        }
+
+        .countdown-timer.urgent {
+            color: var(--danger);
+            animation: pulse 0.6s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.05); }
+        }
+
+        .countdown-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--muted);
+        }
+
+        .countdown-rate {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* ── STATUS BADGE ── */
+        .status-badge {
+            position: absolute;
+            top: 14px;
+            left: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 4px 10px;
+            border: 2px solid var(--border);
+        }
+
+        .status-badge.live {
+            background: #00cc66;
+            color: #fff;
+            border-color: #00cc66;
+        }
+
+        .status-badge.empty-badge {
+            background: #eee;
+            color: #999;
+            border-color: #ddd;
+        }
+
+        .status-badge.queued {
+            background: #ffc107;
+            color: #111;
+            border-color: #ffc107;
+        }
+
+        /* ── QUEUE BANNER ── */
+        .queue-banner {
+            width: 100%;
+            max-width: 720px;
+            background: var(--warning-bg);
+            border: 1px solid #ffc107;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.85rem;
+            margin-top: -6px;
+            display: none;
+        }
+
+        .queue-banner .queue-count {
+            font-weight: 700;
+        }
+
+        /* ── INFO BAR ── */
+        .info-bar {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0 10px;
+        }
+
+        .rate-display {
+            background: var(--border);
+            color: #fff;
+            padding: 12px 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .rate-display .rate-number {
+            font-size: 2rem;
+            display: block;
+        }
+
+        .rate-display .rate-unit {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+        }
+
+        .availability {
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        .availability strong {
+            color: var(--text);
+        }
+
+        .btn-buy {
+            background: var(--accent);
+            color: var(--text);
+            border: 3px solid var(--border);
+            padding: 16px 28px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-buy:hover {
+            background: var(--border);
+            color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 4px 4px 0 #888;
+        }
+
+        .btn-buy:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ── MINUTES SELECTOR ── */
+        .minutes-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .minutes-input {
+            width: 80px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: 3px solid var(--border);
+            text-align: center;
+        }
+
+        .minutes-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .total-display {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-left: 8px;
+        }
+
+        /* ── ESCALATION TABLE ── */
+        .escalation-table {
+            width: 100%;
+            max-width: 720px;
+            margin: 16px 0;
+            border: 2px solid #eee;
+            padding: 14px;
+            font-size: 0.8rem;
+        }
+
+        .escalation-table summary {
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .escalation-table table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+
+        .escalation-table th,
+        .escalation-table td {
+            padding: 6px 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .escalation-table th {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+        }
+
+        .escalation-table .current-row {
+            background: #fffde7;
+            font-weight: 700;
+        }
+
+        /* ── ARCHIVE ── */
+        .archive {
+            width: 100%;
+            max-width: 720px;
+            margin-top: 40px;
+            margin-bottom: 60px;
+        }
+
+        .archive h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        .archive-entry {
+            display: grid;
+            grid-template-columns: 80px 1fr auto;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+            align-items: baseline;
+        }
+
+        .archive-date {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
+        .archive-msg {
+            font-weight: 600;
+        }
+
+        .archive-meta {
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .archive-meta .price {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .archive-empty {
+            color: #999;
+            font-style: italic;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.75rem;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .footer a {
+            color: #666;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .billboard { min-height: 240px; padding: 30px 16px 60px; }
+            .billboard-message { font-size: 1.3rem; }
+            .countdown-timer { font-size: 2rem; }
+            .info-bar { flex-direction: column; align-items: stretch; }
+            .rate-display { text-align: center; }
+            .availability { text-align: center; }
+            .btn-buy { text-align: center; }
+            .minutes-selector { justify-content: center; }
+            .archive-entry { grid-template-columns: 60px 1fr; }
+            .archive-meta { grid-column: 1 / -1; text-align: left; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>⬜ The Empty Billboard</h1>
+        <div class="subtitle">$1/min base rate. Doubles every purchase. Resets Sundays.</div>
+    </div>
+
+    <!-- ═══════════ BILLBOARD ═══════════ -->
+    <div class="billboard-wrapper">
+        <div class="billboard empty-state" id="billboard">
+            <div class="status-badge empty-badge" id="statusBadge">AVAILABLE</div>
+
+            <div class="billboard-message" id="billboardMsg">
+                This billboard is empty.
+            </div>
+            <div class="billboard-buyer" id="billboardBuyer"></div>
+
+            <div class="countdown-section" id="countdownSection" style="display:none;">
+                <div class="countdown-timer" id="countdownTimer">00:00:00</div>
+                <div class="countdown-label">REMAINING</div>
+                <div class="countdown-rate" id="countdownRate"></div>
+            </div>
+        </div>
+
+        <div class="queue-banner" id="queueBanner">
+            🔄 <span class="queue-count" id="queueCountText">0 slot(s)</span> queued after this one
+        </div>
+    </div>
+
+    <!-- ═══════════ INFO BAR ═══════════ -->
+    <div class="info-bar">
+        <div class="rate-display">
+            <span class="rate-number" id="rateNumber">$1</span>
+            <span class="rate-unit">per minute</span>
+        </div>
+
+        <div class="availability" id="availabilityText">
+            <strong>Available now</strong><br>
+            Minimum 60 minutes
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+            <div class="minutes-selector" id="minutesSelector">
+                <input type="number" class="minutes-input" id="minutesInput" 
+                       value="60" min="60" step="15" max="1440">
+                <span class="minutes-label">minutes</span>
+                <span class="total-display" id="totalDisplay">= $60</span>
+            </div>
+            <button class="btn-buy" id="buyButton">▶ Buy Time</button>
+        </div>
+    </div>
+
+    <!-- ═══════════ ESCALATION TABLE ═══════════ -->
+    <details class="escalation-table">
+        <summary>📊 Rate Escalation — See how high it goes</summary>
+        <table>
+            <thead>
+                <tr><th>Purchase #</th><th>Rate/min</th><th>1 Hour</th><th>6 Hours</th><th>24 Hours</th></tr>
+            </thead>
+            <tbody id="escalationBody"></tbody>
+        </table>
+    </details>
+
+    <!-- ═══════════ ARCHIVE ═══════════ -->
+    <div class="archive">
+        <h2>📜 Message Archive</h2>
+        <div id="archiveList">
+            <div class="archive-empty">No messages yet. Be the first.</div>
+        </div>
+    </div>
+
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <div class="footer">
+        ⏱️ $1/min base · Doubles each purchase · 60-min minimum · Resets Sunday 00:00 UTC<br>
+        By purchasing you agree your message is legal and not hate speech, harassment, or spam.<br>
+        All messages reviewed before going live. No refunds on published time.<br>
+        <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
+    </div>
+
+    <!-- ═══════════ SCRIPTS ═══════════ -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        // ─────────────────────────────────────
+        // CONFIGURATION — REPLACE THESE
+        // ─────────────────────────────────────
+        const STRIPE_PUBLISHABLE_KEY = 'pk_live_YOUR_PUBLISHABLE_KEY';
+        const API_BASE = '/api';  // Same origin if backend serves static files
+        const POLL_INTERVAL_MS = 5000;  // Poll every 5 seconds
+        const MIN_MINUTES = 60;
+        const MAX_MINUTES = 1440;  // 24 hours max
+
+        // ─────────────────────────────────────
+        // GLOBAL STATE
+        // ─────────────────────────────────────
+        let stripe;
+        let appState = {
+            active: null,           // Current running slot or null
+            queue_length: 0,
+            queue_slots: [],
+            next_rate_per_minute: 1,
+            next_rate_display: '$1.00/min',
+            archive: []
+        };
+        let countdownInterval = null;
+        let expiryTimestamp = null;
+
+        // ─────────────────────────────────────
+        // DOM REFS
+        // ─────────────────────────────────────
+        const dom = {
+            billboard: document.getElementById('billboard'),
+            statusBadge: document.getElementById('statusBadge'),
+            billboardMsg: document.getElementById('billboardMsg'),
+            billboardBuyer: document.getElementById('billboardBuyer'),
+            countdownSection: document.getElementById('countdownSection'),
+            countdownTimer: document.getElementById('countdownTimer'),
+            countdownRate: document.getElementById('countdownRate'),
+            queueBanner: document.getElementById('queueBanner'),
+            queueCountText: document.getElementById('queueCountText'),
+            rateNumber: document.getElementById('rateNumber'),
+            availabilityText: document.getElementById('availabilityText'),
+            minutesSelector: document.getElementById('minutesSelector'),
+            minutesInput: document.getElementById('minutesInput'),
+            totalDisplay: document.getElementById('totalDisplay'),
+            buyButton: document.getElementById('buyButton'),
+            escalationBody: document.getElementById('escalationBody'),
+            archiveList: document.getElementById('archiveList')
+        };
+
+        // ─────────────────────────────────────
+        // INIT
+        // ─────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+            buildEscalationTable();
+            fetchState();
+            dom.minutesInput.addEventListener('input', updateTotalDisplay);
+            dom.buyButton.addEventListener('click', handleBuyClick);
+            setInterval(fetchState, POLL_INTERVAL_MS);
+        });
+
+        // ─────────────────────────────────────
+        // BUILD STATIC ESCALATION TABLE
+        // ─────────────────────────────────────
+        function buildEscalationTable() {
+            const rows = [];
+            for (let i = 0; i <= 12; i++) {
+                const rate = Math.pow(2, i);
+                rows.push({ purchase: i, rate, hr1: rate * 60, hr6: rate * 360, hr24: rate * 1440 });
+            }
+            dom.escalationBody.innerHTML = rows.map(r => `
+                <tr class="${r.purchase === 0 ? 'current-row' : ''}" id="escRow${r.purchase}">
+                    <td>#${r.purchase + 1}</td>
+                    <td>$${r.rate}/min</td>
+                    <td>$${r.hr1.toLocaleString()}</td>
+                    <td>$${r.hr6.toLocaleString()}</td>
+                    <td>$${r.hr24.toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        function highlightCurrentEscalationRow(purchaseCount) {
+            document.querySelectorAll('#escalationBody tr').forEach(r => r.classList.remove('current-row'));
+            const row = document.getElementById(`escRow${purchaseCount}`);
+            if (row) row.classList.add('current-row');
+        }
+
+        // ─────────────────────────────────────
+        // FETCH STATE FROM BACKEND
+        // ─────────────────────────────────────
+        async function fetchState() {
+            try {
+                const res = await fetch(`${API_BASE}/state`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                appState = data;
+                render();
+            } catch (err) {
+                console.error('Fetch state error:', err);
+                // Keep showing last known state
+            }
+        }
+
+        // ─────────────────────────────────────
+        // RENDER EVERYTHING
+        // ─────────────────────────────────────
+        function render() {
+            renderBillboard();
+            renderInfoBar();
+            renderArchive();
+            updateTotalDisplay();
+
+            // Highlight escalation row
+            const purchaseCount = Math.round(Math.log2(appState.next_rate_per_minute));
+            highlightCurrentEscalationRow(purchaseCount);
+        }
+
+        function renderBillboard() {
+            const { active, queue_length } = appState;
+
+            // Clear any existing countdown interval
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            expiryTimestamp = null;
+
+            if (active && active.minutes_remaining > 0) {
+                // ── ACTIVE SLOT ──
+                dom.billboard.className = 'billboard active-state';
+                dom.statusBadge.className = 'status-badge live';
+                dom.statusBadge.textContent = '🔴 LIVE';
+                dom.billboardMsg.textContent = `"${active.message}"`;
+                dom.billboardBuyer.textContent = `— ${active.buyer_name}, paid $${active.total_paid.toFixed(2)} for ${active.total_minutes} min`;
+                dom.countdownSection.style.display = 'flex';
+                dom.countdownRate.textContent = `$${active.rate_per_minute.toFixed(2)}/min`;
+
+                // Calculate exact expiry
+                const now = Date.now();
+                const remainingMs = active.minutes_remaining * 60000;
+                expiryTimestamp = now + remainingMs;
+
+                // Start countdown
+                updateCountdownDisplay();
+                countdownInterval = setInterval(updateCountdownDisplay, 250);
+
+            } else if (active && active.minutes_remaining <= 0) {
+                // ── JUST EXPIRED (shouldn't normally see this, backend handles it) ──
+                dom.billboard.className = 'billboard empty-state';
+                dom.statusBadge.className = 'status-badge empty-badge';
+                dom.statusBadge.textContent = 'EXPIRED';
+                dom.billboardMsg.textContent = 'This billboard is empty.';
+                dom.billboardBuyer.textContent = '';
+                dom.countdownSection.style.display = 'none';
+
+            } else {
+                // ── EMPTY ──
+                dom.billboard.className = 'billboard empty-state';
+                dom.statusBadge.className = 'status-badge empty-badge';
+                dom.statusBadge.textContent = 'AVAILABLE';
+                dom.billboardMsg.textContent = 'This billboard is empty.';
+                dom.billboardBuyer.textContent = '';
+                dom.countdownSection.style.display = 'none';
+            }
+
+            // Queue banner
+            if (queue_length > 0) {
+                dom.queueBanner.style.display = 'block';
+                dom.queueCountText.textContent = `${queue_length} slot(s)`;
+            } else {
+                dom.queueBanner.style.display = 'none';
+            }
+        }
+
+        function updateCountdownDisplay() {
+            if (!expiryTimestamp) return;
+
+            const now = Date.now();
+            const remainingMs = Math.max(0, expiryTimestamp - now);
+            const totalSeconds = Math.floor(remainingMs / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const remainingMinutes = Math.floor(remainingMs / 60000);
+
+            const timerEl = dom.countdownTimer;
+            timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // Update classes based on urgency
+            timerEl.classList.remove('warning', 'urgent');
+            dom.billboard.classList.remove('urgent-state');
+
+            if (remainingMinutes <= 1) {
+                timerEl.classList.add('urgent');
+                dom.billboard.classList.add('urgent-state');
+            } else if (remainingMinutes <= 5) {
+                timerEl.classList.add('warning');
+            }
+
+            // If expired, refresh state
+            if (remainingMs <= 0) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+                expiryTimestamp = null;
+                fetchState();
+            }
+        }
+
+        function renderInfoBar() {
+            const { active, next_rate_per_minute, next_rate_display } = appState;
+
+            dom.rateNumber.textContent = `$${next_rate_per_minute.toFixed(2)}`;
+
+            if (active && active.minutes_remaining > 0) {
+                dom.availabilityText.innerHTML = `<strong>Slot occupied</strong><br>Next available after countdown`;
+                dom.buyButton.textContent = '▶ Pre-Buy Next Slot';
+                dom.buyButton.disabled = false;
+                dom.minutesSelector.style.opacity = '1';
+                dom.minutesSelector.style.pointerEvents = 'auto';
+            } else {
+                dom.availabilityText.innerHTML = `<strong>Available now</strong><br>Minimum ${MIN_MINUTES} minutes`;
+                dom.buyButton.textContent = '▶ Buy Time';
+                dom.buyButton.disabled = false;
+                dom.minutesSelector.style.opacity = '1';
+                dom.minutesSelector.style.pointerEvents = 'auto';
+            }
+        }
+
+        function updateTotalDisplay() {
+            const minutes = parseInt(dom.minutesInput.value) || MIN_MINUTES;
+            const clampedMinutes = Math.max(MIN_MINUTES, Math.min(MAX_MINUTES, minutes));
+            const rate = appState.next_rate_per_minute || 1;
+            const total = clampedMinutes * rate;
+            dom.totalDisplay.textContent = `= $${total.toFixed(2)}`;
+        }
+
+        function renderArchive() {
+            const { archive } = appState;
+
+            if (!archive || archive.length === 0) {
+                dom.archiveList.innerHTML = '<div class="archive-empty">No messages yet. Be the first.</div>';
+                return;
+            }
+
+            dom.archiveList.innerHTML = archive.map(entry => `
+                <div class="archive-entry">
+                    <span class="archive-date">${formatDate(entry.completed_at || entry.started_at)}</span>
+                    <span class="archive-msg">"${escapeHtml(entry.message)}"<br><small>— ${escapeHtml(entry.buyer_name || 'Anonymous')}</small></span>
+                    <span class="archive-meta">
+                        ${entry.total_minutes || entry.minutes_purchased} min<br>
+                        <span class="price">$${(entry.total_paid || 0).toFixed(2)}</span>
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // ─────────────────────────────────────
+        // BUY FLOW
+        // ─────────────────────────────────────
+        async function handleBuyClick(e) {
+            e.preventDefault();
+
+            const minutes = Math.max(MIN_MINUTES, Math.min(MAX_MINUTES, 
+                parseInt(dom.minutesInput.value) || MIN_MINUTES));
+            const rate = appState.next_rate_per_minute;
+            const total = minutes * rate;
+
+            const confirmed = confirm(
+                `Buy ${minutes} minutes on The Empty Billboard?\n\n` +
+                `Rate: $${rate.toFixed(2)}/min\n` +
+                `Total: $${total.toFixed(2)}\n\n` +
+                `You'll submit your message after payment.`
+            );
+
+            if (!confirmed) return;
+
+            dom.buyButton.disabled = true;
+            dom.buyButton.textContent = 'Connecting to Stripe...';
+
+            try {
+                const res = await fetch(`${API_BASE}/create-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ desired_minutes: minutes })
+                });
+
+                const session = await res.json();
+
+                if (session.error) {
+                    alert('Error: ' + session.error);
+                    dom.buyButton.disabled = false;
+                    dom.buyButton.textContent = '▶ Buy Time';
+                    return;
+                }
+
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+
+                if (result.error) {
+                    alert(result.error.message);
+                    dom.buyButton.disabled = false;
+                    dom.buyButton.textContent = '▶ Buy Time';
+                }
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('Something went wrong. Try again.');
+                dom.buyButton.disabled = false;
+                dom.buyButton.textContent = '▶ Buy Time';
+            }
+        }
+
+        // ─────────────────────────────────────
+        // HELPERS
+        // ─────────────────────────────────────
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '—';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
