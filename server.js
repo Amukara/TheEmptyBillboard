@@ -19,10 +19,11 @@ app.use(express.json());
 
 // ── CONFIGURATION ──
 const CONFIG = {
-    STRIPE_SECRET_KEY: 'sk_live_YOUR_SECRET_KEY',         // ← REPLACE
-    STRIPE_WEBHOOK_SECRET: 'whsec_YOUR_WEBHOOK_SECRET',   // ← REPLACE
+    STRIPE_SECRET_KEY: 'pk_test_51Tbq162KI9vCuZ0aZiRRGsDR6CY2fB2h8EtRJgw6IBRXxELRll3ez09XiWLI3JrauCLTBM3XmQUGFzt1D9eCdqBW00gNOQwvJt',         // ← REPLACE
+    STRIPE_WEBHOOK_SECRET: 'whsec_kAZMO3vYrmnquiWna4z9yBYYs89Gg53a
+',   // ← REPLACE
     PORT: process.env.PORT || 3000,
-    DOMAIN: 'https://yourdomain.com',                      // ← REPLACE
+    DOMAIN: 'https://empty-billboard.com',                      // ← REPLACE
     DATA_FILE: path.join(__dirname, 'data.json'),
     BASE_RATE: 1.00,           // $1/min
     MIN_MINUTES: 60,           // 1 hour minimum
