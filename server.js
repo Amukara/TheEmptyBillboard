@@ -19,7 +19,7 @@ app.use(express.json());
 
 // ── CONFIGURATION ──
 const CONFIG = {
-    STRIPE_SECRET_KEY: 'pk_test_51Tbq162KI9vCuZ0aZiRRGsDR6CY2fB2h8EtRJgw6IBRXxELRll3ez09XiWLI3JrauCLTBM3XmQUGFzt1D9eCdqBW00gNOQwvJt',         // ← REPLACE
+    STRIPE_SECRET_KEY: 'sk_test_51Tbq162KI9vCuZ0a6yNo2FyfB7UUT0F38ndxLv97opB0M48nsq1Zop71VRowBb9ip7C3eyIAbUOZg7gWu7uc3Kfk00cMsWgc1z',         // ← REPLACE
     STRIPE_WEBHOOK_SECRET: 'whsec_kAZMO3vYrmnquiWna4z9yBYYs89Gg53a
 ',   // ← REPLACE
     PORT: process.env.PORT || 3000,
