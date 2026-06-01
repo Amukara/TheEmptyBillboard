@@ -305,12 +305,26 @@ app.post('/api/create-checkout-session', async (req, res) => {
 // ── POST /api/submit-message ──
 app.post('/api/submit-message', async (req, res) => {
     try {
-        const { session_id, message, buyer_name } = req.body;
+        const { session_id, message, buyer_name, media_url, media_type } = req.body;
 
         if (!session_id) return res.status(400).json({ error: 'Missing session ID.' });
-        if (!message || message.trim().length === 0) return res.status(400).json({ error: 'Message required.' });
-        if (message.length > CONFIG.MAX_MESSAGE_LENGTH) {
+        
+        // Must have either message or media
+        if ((!message || message.trim().length === 0) && !media_url) {
+            return res.status(400).json({ error: 'Message or media required.' });
+        }
+        if (message && message.length > CONFIG.MAX_MESSAGE_LENGTH) {
             return res.status(400).json({ error: 'Max ' + CONFIG.MAX_MESSAGE_LENGTH + ' characters.' });
+        }
+        
+        // Validate media type
+        if (media_type && !['image', 'video'].includes(media_type)) {
+            return res.status(400).json({ error: 'Invalid media type. Use "image" or "video".' });
+        }
+        
+        // Basic URL validation for media
+        if (media_url && !media_url.match(/^https?:\/\/.+/)) {
+            return res.status(400).json({ error: 'Media URL must start with http:// or https://' });
         }
 
         const data = readData();
@@ -334,8 +348,10 @@ app.post('/api/submit-message', async (req, res) => {
             return res.status(404).json({ error: 'Session not found. Has payment completed?' });
         }
 
-        slot.message = message.trim();
+        slot.message = message ? message.trim() : '';
         slot.buyer_name = buyer_name?.trim() || 'Anonymous';
+        slot.media_url = media_url || null;
+        slot.media_type = media_type || null;
 
         if (source === 'next_active') {
             const now = new Date();
@@ -347,8 +363,7 @@ app.post('/api/submit-message', async (req, res) => {
         }
 
         writeData(data);
-
-        console.log('📝 Message submitted:', message.trim());
+        console.log('📝 Message submitted:', message || '[media]', media_type || '');
 
         res.json({
             success: true,
