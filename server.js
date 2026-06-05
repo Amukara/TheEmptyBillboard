@@ -31,7 +31,7 @@ app.use(express.json());
 // ── CONFIGURATION ──
 const CONFIG = {
     PORT: process.env.PORT || 3000,
-    DOMAIN: process.env.DOMAIN || 'https://empty-billboard.onrender.com',
+    DOMAIN: process.env.DOMAIN || 'https://emptybillboard.online',
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || 'whsec_YOUR_KEY_HERE',
     DATA_FILE: path.join(__dirname, 'data.json'),
     BASE_RATE: 1.00,
