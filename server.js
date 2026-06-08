@@ -1,4 +1,9 @@
 // ============================================================
+// PERSISTENT STORAGE FIX — RENDER READY
+// ============================================================
+const DATA_DIR = process.env.RENDER ? '/data' : __dirname;
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+// ============================================================
 // THE EMPTY BILLBOARD — BACKEND SERVER (Render-Ready)
 // ============================================================
 
