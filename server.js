@@ -74,7 +74,7 @@ function createFreshData() {
 
 function readData() {
     try {
-        if (!fs.existsSync(CONFIG.DATA_FILE)) {
+        if (!fs.existsSync(DATA_FILE: DATA_FILE,)) {
             const fresh = createFreshData();
             fs.writeFileSync(CONFIG.DATA_FILE, JSON.stringify(fresh, null, 2));
             return fresh;
